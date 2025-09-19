@@ -14,10 +14,10 @@
 <body>
   <h1>Columnar Transposition Decrypt</h1>
 
-  <p id="info">This page reads the ciphertext from the <code>data</code> query parameter in the URL.</p>
+  <p id="info">This page decrypts the ciphertext when you enter the correct keyword.</p>
 
   <div>
-    <label for="cipher">Ciphertext (from URL):</label>
+    <label for="cipher">Ciphertext (Encrypted Message):</label>
     <input type="text" id="cipher" style="width:100%" readonly />
   </div>
 
@@ -99,29 +99,19 @@
       return plaintext;
     }
 
-    // Grab ciphertext from URL param 'data'
-    function getCipherFromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      const data = params.get('data') || '';
-      // data might be URL-encoded; decode it
-      try {
-        return decodeURIComponent(data);
-      } catch (e) {
-        return data;
-      }
-    }
-
-    // Fill the cipher input field
+    // Set the ciphertext into the input field (this could be dynamically set by the server)
+    const ciphertext = "HOLELXS"; // Replace this with your actual encrypted text
     const cipherField = document.getElementById('cipher');
-    const resultArea = document.getElementById('resultArea');
-    cipherField.value = getCipherFromUrl();
+    cipherField.value = ciphertext;
 
+    // Handle Decrypt button click
     document.getElementById('decryptBtn').addEventListener('click', () => {
       const cipher = document.getElementById('cipher').value || '';
       const keyword = document.getElementById('keyword').value || '';
+      const resultArea = document.getElementById('resultArea');
 
       if (!cipher) {
-        resultArea.textContent = "No ciphertext found in URL (query param 'data').";
+        resultArea.textContent = "No ciphertext provided.";
         return;
       }
       if (!keyword) {
@@ -130,14 +120,12 @@
       }
 
       try {
-        const pt = columnar_decrypt_js(cipher, keyword);
-        resultArea.textContent = "Decrypted plaintext:\n" + pt;
+        const plaintext = columnar_decrypt_js(cipher, keyword);
+        resultArea.textContent = "Decrypted plaintext:\n" + plaintext;
       } catch (e) {
         resultArea.textContent = "Error during decryption: " + e.message;
       }
     });
-
-    // Optionally auto-attempt decrypt if keyword autofilled (no auto-run)
   </script>
 </body>
 </html>
