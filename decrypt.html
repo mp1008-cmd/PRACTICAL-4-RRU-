@@ -1,131 +1,71 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Columnar Decrypt</title>
+  <meta charset="UTF-8">
+  <title>Columnar Cipher Decryptor</title>
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 24px; max-width: 720px; margin: auto; }
-    input, button { font-size: 1rem; padding: 8px; margin: 4px 0; }
-    .result { margin-top: 12px; padding: 12px; border-radius: 8px; background: #f3f3f3; }
-    label { display:block; margin-top: 12px; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+
+    input,
+    button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+    }
   </style>
 </head>
 <body>
-  <h1>Columnar Transposition Decrypt</h1>
+  <h1>Columnar Cipher Decryptor</h1>
+  <p>Enter the key used for encryption:</p>
 
-  <p id="info">This page decrypts the ciphertext when you enter the correct keyword.</p>
+  <input type="text" id="key" placeholder="Enter Key">
+  <button onclick="decrypt()">Decrypt</button>
 
-  <div>
-    <label for="cipher">Ciphertext (Encrypted Message):</label>
-    <input type="text" id="cipher" style="width:100%" readonly />
-  </div>
-
-  <div>
-    <label for="keyword">Keyword (enter to decrypt):</label>
-    <input type="text" id="keyword" style="width:100%" placeholder="Enter keyword" />
-  </div>
-
-  <div>
-    <button id="decryptBtn">Decrypt</button>
-  </div>
-
-  <div class="result" id="resultArea">Decrypted message will appear here.</div>
+  <div id="result"></div>
 
   <script>
-    const PADDING_CHAR = 'X';
+    const urlParams = new URLSearchParams(window.location.search);
+    const cipher = urlParams.get('cipher');
 
-    function columnOrderFromKeyword(keyword) {
-      // Build array of [char, originalIndex], then stable-sort by char,
-      // returning the sorted original indices.
-      const arr = [];
-      for (let i = 0; i < keyword.length; i++) {
-        arr.push({ ch: keyword[i], idx: i });
-      }
-      // stable sort by char then idx
-      arr.sort((a, b) => {
-        if (a.ch < b.ch) return -1;
-        if (a.ch > b.ch) return 1;
-        return a.idx - b.idx;
+    function columnarDecrypt(cipher, key) {
+      if (!cipher || !key) return "Missing cipher or key!";
+
+      const rows = Math.floor(cipher.length / key.length);
+      let m = {};
+      let start = 0;
+
+      [...key].sort().forEach(k => {
+        m[k] = cipher.slice(start, start + rows).split('');
+        start += rows;
       });
-      return arr.map(x => x.idx);
-    }
 
-    function columnar_decrypt_js(ciphertext, keyword) {
-      if (!keyword) {
-        throw new Error("Keyword must not be empty");
-      }
-      const cols = keyword.length;
-      const rows = Math.ceil(ciphertext.length / cols); // ciphertext was from columns and full padded matrix
-
-      // Determine the order of columns (which column index corresponds to each piece)
-      const order = columnOrderFromKeyword(keyword);
-
-      // Each column has exactly 'rows' characters (encryption padded to full rows).
-      // So split ciphertext by columns in the sorted order.
-      const colsParts = [];
-      let pos = 0;
-      for (let i = 0; i < cols; i++) {
-        const part = ciphertext.substr(pos, rows);
-        colsParts.push(part);
-        pos += rows;
-      }
-
-      // Build an empty matrix rows x cols
-      const matrix = Array.from({length: rows}, () => Array(cols).fill(''));
-
-      // Place columns into matrix according to the sorted order: the nth part belongs to column order[n]
-      for (let sortedIndex = 0; sortedIndex < order.length; sortedIndex++) {
-        const colIndex = order[sortedIndex];
-        const part = colsParts[sortedIndex];
-        for (let r = 0; r < rows; r++) {
-          matrix[r][colIndex] = part[r] || '';
-        }
-      }
-
-      // Read row-wise to reconstruct plaintext (and strip trailing padding)
+      let ordered = [...key].map(k => m[k]);
       let plaintext = '';
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          plaintext += matrix[r][c];
+
+      for (let i = 0; i < rows; i++) {
+        for (let col of ordered) {
+          plaintext += col[i];
         }
       }
 
-      // remove trailing padding characters added during encryption
-      while (plaintext.endsWith(PADDING_CHAR)) {
-        plaintext = plaintext.slice(0, -1);
-      }
-
-      return plaintext;
+      return plaintext.trim();
     }
 
-    // Set the ciphertext into the input field (this could be dynamically set by the server)
-    const ciphertext = "HOLELXS"; // Replace this with your actual encrypted text
-    const cipherField = document.getElementById('cipher');
-    cipherField.value = ciphertext;
-
-    // Handle Decrypt button click
-    document.getElementById('decryptBtn').addEventListener('click', () => {
-      const cipher = document.getElementById('cipher').value || '';
-      const keyword = document.getElementById('keyword').value || '';
-      const resultArea = document.getElementById('resultArea');
-
-      if (!cipher) {
-        resultArea.textContent = "No ciphertext provided.";
-        return;
-      }
-      if (!keyword) {
-        resultArea.textContent = "Please enter a keyword to decrypt.";
-        return;
-      }
-
-      try {
-        const plaintext = columnar_decrypt_js(cipher, keyword);
-        resultArea.textContent = "Decrypted plaintext:\n" + plaintext;
-      } catch (e) {
-        resultArea.textContent = "Error during decryption: " + e.message;
-      }
-    });
+    function decrypt() {
+      const key = document.getElementById("key").value;
+      const result = columnarDecrypt(cipher, key);
+      document.getElementById("result").innerText = "Plaintext: " + result;
+    }
   </script>
 </body>
 </html>
